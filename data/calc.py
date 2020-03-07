@@ -4,7 +4,7 @@ from decimal import Decimal
 from svglib.svglib import svg2rlg
 
 app = Flask(__name__)
-baseURL = "http://localhost:3220/insertpoll?state={0}&demVotes={1}&repVotes={2}&demProb={3}&repProb={4}&date={5}&notes={6}"
+baseURL = "http://localhost:3110/insertpoll?state={0}&demVotes={1}&repVotes={2}&demProb={3}&repProb={4}&date={5}&notes={6}"
 
 def callMethod(URL):
     try:
@@ -69,7 +69,7 @@ def setPoll(state, sampleSize, demVotes, repVotes):
     repVotes = int(sampleSize*repVotes)
     return setValue(demVotes, repVotes, state)
 
-if(len(sys.argv) != 4):
+if(len(sys.argv) != 5):
     print("Usage state sample demvotes repvotes")
 else:
     setPoll(sys.argv[1], int(sys.argv[2]), float(sys.argv[3]), float(sys.argv[4]))

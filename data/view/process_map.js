@@ -1,14 +1,17 @@
 window.onload=function() {
-    var a = document.getElementById("map");
-    console.log(a);
-    var AZ = a.getElementById("AZ");
-    console.log(AZ);
-    //sampleMap.setAttribute("fill", "lime");
-    AZ.setAttributeNS(null, 'fill', '#f06');
-	//svgItem.setAttribute("fill", "lime");
+    var baseAPI = "http://localhost:3110/getresults";
+    $.get(`${baseAPI}`, function(res) {
+        var a = document.getElementById("map");
+        var demPnt = 0;
+        var repPnt = 0;
+        res.forEach( (curRes) => {
+            demPnt += curRes['result'] > 0 ? curRes['POINTS'] : 0;
+            repPnt += curRes['result'] < 0 ? curRes['POINTS'] : 0;
+            var color = curRes['result'] < 0 ? 'red' : 'blue';
+            var state = a.getElementById(curRes['STATE']);
+            state.setAttributeNS(null, 'fill', color);
+        });
+        console.log(demPnt);
+        console.log(repPnt);
+    });
 };
-
-
-// var curSvg = document.getElementsByTagName('svg')[0];
-// var rect = document.getElementById("AZ");
-// rect.setAttributeNS(null, 'fill', '#f06');
