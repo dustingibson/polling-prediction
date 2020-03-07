@@ -1,92 +1,28 @@
-import math, sqlite3
+import math, sqlite3, requests, time, json, sys
 from flask import Flask, escape, request
 from decimal import Decimal
-import time, json
+from svglib.svglib import svg2rlg
 
 app = Flask(__name__)
+baseURL = "http://localhost:3220/insertpoll?state={0}&demVotes={1}&repVotes={2}&demProb={3}&repProb={4}&date={5}&notes={6}"
 
-def fillValues():
+def callMethod(URL):
     try:
-        with sqlite3.connect("db/db.bin") as conn:
-            timestamp = int(time.time())
-            cursor = conn.cursor()
-            query = "SELECT MAX(DATE),ID,STATE,VOTES_A,VOTES_B FROM POLLS WHERE PROB_A IS NULL OR PROB_B IS NULL GROUP BY STATE"
-            cursor.execute(query)
-            data = cursor.fetchall()
-            for row in data:
-                id = row[1]
-                state = row[2]
-                votesA = row[3]
-                votesB = row[4]
-                prob = calcProbPF(votesA, votesB)
-                #updateQuery = "UPDATE POLLS SET PROB_A=" + str(format(prob[0], '.5g')) + " PROB_B=" + str(format(prob[1], '.5g')) + " WHERE ID=" + str(id)
-                updateQuery = "UPDATE POLLS SET PROB_A=" + str(Decimal(prob[0])) + ", PROB_B=" + str(Decimal(prob[1])) + " WHERE ID=" + str(id)
-                stateUpdateQuery = "UPDATE STATES SET PROB_A=" + str(Decimal(prob[0])) + ", PROB_B=" + str(Decimal(prob[1])) + ", LAST_UPDATE=" + str(timestamp) + " WHERE NAME='" + str(state) + "'"
-                print(stateUpdateQuery)
-                cursor.execute(updateQuery)
-                conn.commit()
-                cursor.execute(stateUpdateQuery)
-                conn.commit()
-            return "Success"
+        print("Get " + URL)
+        r = requests.post(url = URL) 
+        print(r)
     except:
-        return "Error"
-        
+        print("error")
 
 def setValue(votesA, votesB, state):
     try:
-        with sqlite3.connect("db/db.bin") as conn:
-            cursor = conn.cursor()
-            timestamp = int(time.time())
-            query = "INSERT INTO POLLS (VOTES_A, VOTES_B, STATE, DATE) VALUES (" + str(votesA) + "," + str(votesB) + ",'" + state +"'," + str(timestamp) + ")"
-            cursor.execute(query)
-            conn.commit()
-        fillValues()
+        timestamp = int(time.time())
+        prob = calcProbPF(votesA, votesB)
+        url = baseURL.format(state, str(votesA), str(votesB), str(prob[0]), str(prob[1]), str(timestamp), "test"  )
+        callMethod(url)
         return "Success"
     except:
         return "Error"
-
-def getAllProb():
-    with sqlite3.connect("db/db.bin") as conn:
-        cursor = conn.cursor()
-        query = "SELECT MAX(DATE),STATE,PROB_A,PROB_B FROM POLLS WHERE PROB_A IS NOT NULL OR PROB_B IS NOT NULL GROUP BY STATE"
-        cursor.execute(query)
-        data = cursor.fetchall()
-        jsonData = []
-        for row in data:
-            allData = {}
-            print(row)
-            allData['state'] = row[1]
-            allData['probA'] = row[2]
-            allData['probB'] = row[3]
-            jsonData.append(allData)
-        return json.dumps(jsonData)
-
-def getPredictions():
-     with sqlite3.connect("db/db.bin") as conn:
-        cursor = conn.cursor()
-        query = "SELECT MAX(DATE),PROB_A,PROB_B FROM POLLS WHERE PROB_A IS NOT NULL OR PROB_B IS NOT NULL GROUP BY STATE"
-        cursor.execute(query)
-        data = cursor.fetchall()
-        jsonData = []
-        for row in data:
-            allData = {}
-            print(row)
-            allData['state'] = row[1]
-            allData['probA'] = row[2]
-            allData['probB'] = row[3]
-            jsonData.append(allData)
-        return json.dumps(jsonData)
-
-def getStates():
-     with sqlite3.connect("db/db.bin") as conn:
-        cursor = conn.cursor()
-        query = "SELECT NAME, POINTS, PROB_A, PROB_B FROM STATE"
-        cursor.execute(query)
-        data = cursor.fetchall()
-        allData = {}
-        for row in data:
-            allData = {}
-        return allData 
 
 def nCr(n,r):
     f = math.factorial
@@ -126,27 +62,14 @@ def calcProb(N, k, tie=False):
 def calcProbPF(s, f, tie=False):
     return calcProb(s + f, s, tie)
 
-@app.route('/getAllProb', methods=['GET', 'POST'])
-def getAllProb():
-    print(request.args.get('test'))
-    return getAllProb()
-
-@app.route('/sendPoll', methods=['POST'])
-def setPoll():
-    demVotes = Decimal(request.args.get('demVotes'))
-    repVotes = Decimal(request.args.get('repVotes'))
-    sampleSize = int(request.args.get('sampleSize'))
-    state = request.args.get('state')
-
+def setPoll(state, sampleSize, demVotes, repVotes):
     if(repVotes > 1 or demVotes > 1):
         return 'Needs to percentage'
-
     demVotes = int(sampleSize*demVotes)
     repVotes = int(sampleSize*repVotes)
-
     return setValue(demVotes, repVotes, state)
 
-#fillValues()
-print(calcProbPF(5000,5001))
-
-app.run()
+if(len(sys.argv) != 4):
+    print("Usage state sample demvotes repvotes")
+else:
+    setPoll(sys.argv[1], int(sys.argv[2]), float(sys.argv[3]), float(sys.argv[4]))
