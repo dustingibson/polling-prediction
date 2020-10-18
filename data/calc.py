@@ -69,7 +69,11 @@ def setPoll(state, sampleSize, demVotes, repVotes):
     repVotes = int(sampleSize*repVotes)
     return setValue(demVotes, repVotes, state)
 
-if(len(sys.argv) != 5):
-    print("Usage state sample demvotes repvotes")
-else:
-    setPoll(sys.argv[1], int(sys.argv[2]), float(sys.argv[3]), float(sys.argv[4]))
+# if(len(sys.argv) != 5):
+#     print("Usage state sample demvotes repvotes")
+# else:
+#     setPoll(sys.argv[1], int(sys.argv[2]), float(sys.argv[3]), float(sys.argv[4]))
+
+print(calcProbPF(4,6))
+
+#4,6 - 0.4000...
